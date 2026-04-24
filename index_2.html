@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>HealthTrack – Know Your Pain Level</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --amber: #f59e0b;
+    --amber-light: #fcd34d;
+    --amber-dark: #b45309;
+    --orange: #ea580c;
+    --red: #dc2626;
+    --green: #16a34a;
+    --green-light: #22c55e;
+    --bg: #1a1208;
+    --surface: #261b0a;
+    --surface2: #332210;
+    --text: #fef3c7;
+    --text-muted: #92400e;
+    --text-dim: #d97706;
+    --radius: 20px;
+    --radius-sm: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Phone shell */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 2px #333, 0 40px 80px rgba(0,0,0,.8), inset 0 0 40px rgba(245,158,11,.03);
+  }
+
+  /* Screens */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease;
+    scrollbar-width: none;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen.active { opacity: 1; pointer-events: all; }
+
+  /* Gradient header bg */
+  .grad-top {
+    background: linear-gradient(160deg, #f59e0b 0%, #ea580c 60%, #991b1b 100%);
+    padding: 56px 28px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .grad-top::after {
+    content:'';
+    position:absolute;
+    inset:0;
+    background: radial-gradient(circle at 70% 20%, rgba(255,255,255,.12) 0%, transparent 60%);
+  }
+
+  /* ─── LOGIN ─── */
+  #screen-login .grad-top { padding-bottom: 48px; }
+  .login-brand { position: relative; z-index: 1; }
+  .login-brand .tagline { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,.7); margin-bottom: 6px; }
+  .login-brand h1 { font-size: 32px; font-weight: 700; color: #fff; line-height: 1.1; }
+  .login-brand h1 span { font-family: 'Space Mono', monospace; display: block; font-size: 13px; color: rgba(255,255,255,.6); margin-top: 6px; font-weight: 400; letter-spacing: 1px; }
+
+  .tab-row { display: flex; background: var(--surface2); border-radius: var(--radius); margin: -20px 24px 0; position: relative; z-index: 10; }
+  .tab-btn { flex: 1; padding: 14px; text-align: center; font-size: 14px; font-weight: 600; color: var(--text-dim); cursor: pointer; border-radius: var(--radius); transition: all .2s; }
+  .tab-btn.active { background: var(--amber); color: #1a1208; }
+
+  .form-body { padding: 28px 24px 32px; display: flex; flex-direction: column; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 12px; font-weight: 600; color: var(--text-dim); letter-spacing: .5px; text-transform: uppercase; }
+  .form-group input, .form-group select {
+    background: var(--surface2);
+    border: 1.5px solid rgba(245,158,11,.2);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .form-group input:focus { border-color: var(--amber); }
+  .form-group input::placeholder { color: var(--text-muted); }
+  .form-group select option { background: #261b0a; }
+
+  .radio-row { display: flex; gap: 12px; }
+  .radio-opt {
+    flex: 1; padding: 12px; border-radius: var(--radius-sm);
+    border: 1.5px solid rgba(245,158,11,.2);
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    color: var(--text-dim); font-size: 13px; font-weight: 500;
+    transition: all .2s;
+  }
+  .radio-opt.selected { border-color: var(--amber); background: rgba(245,158,11,.1); color: var(--text); }
+  .radio-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--amber); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .radio-dot.filled::after { content:''; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); display: block; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--amber), var(--orange));
+    color: #fff;
+    border: none;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+    transition: transform .1s, opacity .1s;
+    letter-spacing: .3px;
+  }
+  .btn-primary:active { transform: scale(.98); opacity: .9; }
+
+  .btn-danger {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    color: #fff;
+    border: none;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+    transition: transform .1s;
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--amber);
+    border: 1.5px solid var(--amber);
+    padding: 13px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-outline:hover { background: rgba(245,158,11,.1); }
+
+  /* ─── DASHBOARD ─── */
+  .dash-header {
+    background: linear-gradient(160deg, #f59e0b 0%, #ea580c 60%, #991b1b 100%);
+    padding: 52px 24px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .dash-header::after {
+    content:'';
+    position:absolute;
+    inset:0;
+    background: radial-gradient(circle at 80% 10%, rgba(255,255,255,.15) 0%, transparent 50%);
+  }
+  .dash-top { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
+  .dash-top .greeting { color: rgba(255,255,255,.7); font-size: 13px; }
+  .dash-top .username { color: #fff; font-size: 20px; font-weight: 700; }
+  .avatar-btn { width: 42px; height: 42px; border-radius: 50%; background: rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; border: none; }
+
+  .pain-pill {
+    background: rgba(0,0,0,.25);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-top: 20px;
+    position: relative; z-index: 1;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .pain-pill .label { color: rgba(255,255,255,.7); font-size: 12px; margin-bottom: 4px; }
+  .pain-pill .value { color: #fff; font-size: 28px; font-weight: 700; font-family: 'Space Mono', monospace; }
+  .pain-pill .emoji { font-size: 40px; }
+
+  .grid-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px 20px 0; }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px 16px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+    cursor: pointer; transition: all .2s;
+    border: 1.5px solid rgba(245,158,11,.08);
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content:'';
+    position: absolute;
+    top: -20px; right: -20px;
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    opacity: .08;
+  }
+  .card:nth-child(1)::before { background: #f59e0b; }
+  .card:nth-child(2)::before { background: #3b82f6; }
+  .card:nth-child(3)::before { background: #10b981; }
+  .card:nth-child(4)::before { background: #ef4444; }
+  .card:nth-child(5)::before { background: #8b5cf6; }
+  .card:nth-child(6)::before { background: #ec4899; }
+  .card:active { transform: scale(.97); }
+  .card-icon { font-size: 28px; }
+  .card-label { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .card-sub { font-size: 11px; color: var(--text-muted); }
+  .card.full-width { grid-column: span 2; flex-direction: row; align-items: center; gap: 16px; }
+  .card.full-width .card-icon { font-size: 36px; }
+
+  /* ─── INNER PAGE HEADER ─── */
+  .page-header {
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    padding: 52px 20px 24px;
+    display: flex; align-items: center; gap: 14px;
+    position: relative;
+  }
+  .back-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; color: #fff; font-size: 18px; flex-shrink: 0; }
+  .page-header h2 { color: #fff; font-size: 20px; font-weight: 700; }
+
+  .page-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+
+  /* ─── PAIN LOGGER ─── */
+  .pain-scale {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .scale-title { font-size: 13px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .slider-wrap { position: relative; padding: 8px 0; }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--amber);
+    box-shadow: 0 0 0 4px rgba(245,158,11,.3);
+    cursor: pointer;
+  }
+  .scale-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
+  .current-pain { text-align: center; margin: 4px 0; }
+  .current-pain .num { font-size: 64px; font-weight: 700; font-family: 'Space Mono', monospace; line-height: 1; }
+  .current-pain .emoji { font-size: 48px; }
+  .current-pain .desc { font-size: 14px; color: var(--text-dim); margin-top: 4px; font-weight: 500; }
+
+  .pain-levels-list { display: flex; flex-direction: column; gap: 8px; }
+  .pain-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    border-left: 4px solid transparent;
+  }
+  .pain-row .left { display: flex; align-items: center; gap: 12px; }
+  .pain-row .date { font-size: 13px; color: var(--text); font-weight: 500; }
+  .pain-row .time { font-size: 11px; color: var(--text-muted); }
+  .pain-badge { padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; font-family: 'Space Mono', monospace; }
+
+  /* ─── REMINDERS ─── */
+  .reminder-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex; gap: 14px; align-items: flex-start;
+    border: 1.5px solid rgba(245,158,11,.1);
+  }
+  .reminder-icon-wrap { width: 44px; height: 44px; border-radius: 12px; background: rgba(245,158,11,.15); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .reminder-info { flex: 1; }
+  .reminder-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .reminder-time { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .reminder-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .pill-btn { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; font-family: 'Sora', sans-serif; cursor: pointer; border: none; transition: opacity .2s; }
+  .pill-taken { background: var(--green); color: #fff; }
+  .pill-snooze { background: rgba(245,158,11,.2); color: var(--amber); }
+  .pill-dismiss { background: rgba(220,38,38,.15); color: #f87171; }
+
+  .add-reminder-form { background: var(--surface); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .add-reminder-form .section-label { font-size: 13px; font-weight: 700; color: var(--amber); text-transform: uppercase; letter-spacing: .5px; }
+
+  /* ─── APPOINTMENTS ─── */
+  .doctor-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    border: 1.5px solid rgba(245,158,11,.1);
+  }
+  .doctor-top { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+  .doctor-avatar { width: 52px; height: 52px; border-radius: 16px; background: linear-gradient(135deg, var(--amber), var(--orange)); display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
+  .doctor-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .doctor-spec { font-size: 12px; color: var(--amber); font-weight: 500; margin-top: 2px; }
+  .doctor-avail { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ─── REPORTS ─── */
+  .chart-wrap { background: var(--surface); border-radius: var(--radius); padding: 20px; }
+  .chart-title { font-size: 13px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 14px; }
+  canvas { border-radius: 8px; }
+  .report-list { background: var(--surface); border-radius: var(--radius); overflow: hidden; }
+  .report-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(245,158,11,.08);
+  }
+  .report-row:last-child { border-bottom: none; }
+  .report-date { font-size: 13px; color: var(--text); font-weight: 500; }
+
+  /* ─── EMERGENCY ─── */
+  .sos-btn {
+    background: linear-gradient(135deg, #dc2626, #7f1d1d);
+    border-radius: var(--radius);
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    width: 100%;
+    animation: pulse-red 2s ease-in-out infinite;
+  }
+  @keyframes pulse-red {
+    0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,.5); }
+    50% { box-shadow: 0 0 0 16px rgba(220,38,38,0); }
+  }
+  .sos-btn .sos-text { font-size: 32px; font-weight: 700; color: #fff; font-family: 'Space Mono', monospace; letter-spacing: 4px; }
+  .sos-btn .sos-sub { font-size: 13px; color: rgba(255,255,255,.7); margin-top: 4px; }
+
+  .emergency-actions { display: flex; flex-direction: column; gap: 12px; }
+  .emg-btn {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px;
+    border-radius: var(--radius);
+    border: none; cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    transition: transform .1s;
+  }
+  .emg-btn:active { transform: scale(.98); }
+  .emg-btn .emg-icon { font-size: 24px; }
+  .emg-btn .emg-text { font-size: 15px; font-weight: 600; }
+  .emg-red { background: linear-gradient(135deg, #dc2626, #991b1b); color: #fff; }
+  .emg-green { background: linear-gradient(135deg, #16a34a, #14532d); color: #fff; }
+  .emg-blue { background: linear-gradient(135deg, #2563eb, #1e3a8a); color: #fff; }
+
+  .contact-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .contact-icon { width: 44px; height: 44px; border-radius: 50%; background: rgba(245,158,11,.15); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .contact-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .contact-rel { font-size: 12px; color: var(--text-muted); }
+
+  /* ─── CAREGIVER ─── */
+  .stat-row { display: flex; gap: 12px; }
+  .stat-box { flex: 1; background: var(--surface); border-radius: var(--radius-sm); padding: 16px; text-align: center; }
+  .stat-box .stat-val { font-size: 28px; font-weight: 700; font-family: 'Space Mono', monospace; color: var(--amber); }
+  .stat-box .stat-lbl { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  .section-heading { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; padding: 4px 0; }
+
+  /* ─── MODAL / TOAST ─── */
+  .toast {
+    position: absolute;
+    bottom: 30px;
+    left: 20px; right: 20px;
+    background: var(--green);
+    color: #fff;
+    padding: 14px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all .3s;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { background: var(--red); }
+
+  /* scrollable content padding */
+  .scroll-pad { padding-bottom: 30px; }
+
+  /* bottom nav for dashboard */
+  .bottom-nav { display: none; }
+
+  /* pain color coding */
+  .p0-2 { color: #22c55e; border-left-color: #22c55e !important; }
+  .p3-4 { color: #84cc16; border-left-color: #84cc16 !important; }
+  .p5-6 { color: #f59e0b; border-left-color: #f59e0b !important; }
+  .p7-8 { color: #f97316; border-left-color: #f97316 !important; }
+  .p9-10 { color: #ef4444; border-left-color: #ef4444 !important; }
+
+  /* Utility */
+  .mt8 { margin-top: 8px; }
+  .mt4 { margin-top: 4px; }
+  .flex-between { display: flex; align-items: center; justify-content: space-between; }
+  .divider { height: 1px; background: rgba(245,158,11,.1); margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+
+  <!-- ══════════════════════ LOGIN ══════════════════════ -->
+  <div class="screen active" id="screen-login">
+    <div class="grad-top">
+      <div class="login-brand">
+        <div class="tagline">Health App</div>
+        <h1>HEALTH<br>TRACK
+          <span>Know your pain level</span>
+        </h1>
+      </div>
+    </div>
+    <div class="tab-row" id="auth-tabs">
+      <div class="tab-btn active" onclick="switchTab('login')">Login</div>
+      <div class="tab-btn" onclick="switchTab('register')">Register</div>
+    </div>
+
+    <!-- Login form -->
+    <div id="login-form" class="form-body">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="Enter your email">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Enter your password">
+      </div>
+      <button class="btn-primary" onclick="doLogin()" style="margin-top:8px">Login</button>
+    </div>
+
+    <!-- Register form -->
+    <div id="register-form" class="form-body" style="display:none">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="reg-name" placeholder="Enter your full name">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="Enter your email address">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-pass" placeholder="Create a password">
+      </div>
+      <div class="form-group">
+        <label>User Type</label>
+        <div class="radio-row">
+          <div class="radio-opt selected" id="opt-patient" onclick="selectUserType('patient')">
+            <div class="radio-dot filled" id="dot-patient"></div> Patient
+          </div>
+          <div class="radio-opt" id="opt-caregiver" onclick="selectUserType('caregiver')">
+            <div class="radio-dot" id="dot-caregiver"></div> Caregiver
+          </div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="doRegister()">Register</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ DASHBOARD ══════════════════════ -->
+  <div class="screen" id="screen-dashboard">
+    <div class="dash-header">
+      <div class="dash-top">
+        <div>
+          <div class="greeting">Good morning 👋</div>
+          <div class="username" id="dash-username">Harsha Sree Gudapati</div>
+        </div>
+        <button class="avatar-btn" onclick="navigate('profile')">👤</button>
+      </div>
+      <div class="pain-pill">
+        <div>
+          <div class="label">Today's Pain Level</div>
+          <div class="value" id="dash-pain-val">—</div>
+          <div class="label" id="dash-pain-desc" style="font-size:11px;margin-top:2px">No entry today</div>
+        </div>
+        <div class="emoji" id="dash-pain-emoji">😶</div>
+      </div>
+    </div>
+
+    <div class="grid-cards scroll-pad">
+      <div class="card" onclick="navigate('pain-logger')">
+        <div class="card-icon">💢</div>
+        <div class="card-label">Log Pain Levels</div>
+        <div class="card-sub">Track intensity</div>
+      </div>
+      <div class="card" onclick="navigate('reminders')">
+        <div class="card-icon">⏰</div>
+        <div class="card-label">Set Reminders</div>
+        <div class="card-sub">Meds & alerts</div>
+      </div>
+      <div class="card" onclick="navigate('appointments')">
+        <div class="card-icon">🩺</div>
+        <div class="card-label">Doctor Appointments</div>
+        <div class="card-sub">Book & manage</div>
+      </div>
+      <div class="card" onclick="navigate('reports')">
+        <div class="card-icon">📊</div>
+        <div class="card-label">Pain Reports</div>
+        <div class="card-sub">Analytics & trends</div>
+      </div>
+      <div class="card full-width" onclick="navigate('emergency')" style="background:linear-gradient(135deg,#450a0a,#7f1d1d);border-color:rgba(220,38,38,.3)">
+        <div class="card-icon">🆘</div>
+        <div>
+          <div class="card-label" style="color:#fca5a5;font-size:15px">Emergency Calls & Chats</div>
+          <div class="card-sub" style="color:#f87171">Instant SOS access</div>
+        </div>
+      </div>
+      <div class="card full-width" onclick="navigate('caregiver')" style="background:linear-gradient(135deg,#064e3b,#065f46)">
+        <div class="card-icon">👥</div>
+        <div>
+          <div class="card-label" style="color:#6ee7b7;font-size:15px">Caregiver Mode</div>
+          <div class="card-sub" style="color:#34d399">Monitor your patient</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ PAIN LOGGER ══════════════════════ -->
+  <div class="screen" id="screen-pain-logger">
+    <div class="page-header">
+      <button class="back-btn" onclick="back()">←</button>
+      <h2>Log Pain Level</h2>
+    </div>
+    <div class="page-body scroll-pad">
+      <div class="pain-scale">
+        <div class="scale-title">How are you feeling right now?</div>
+        <div class="current-pain">
+          <div class="emoji" id="logger-emoji">😶</div>
+          <div class="num" id="logger-num" style="color:var(--amber)">5</div>
+          <div class="desc" id="logger-desc">Moderate pain</div>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" min="0" max="10" value="5" id="pain-slider" oninput="updateSlider(this.value)">
+        </div>
+        <div class="scale-labels"><span>0 – No pain</span><span>10 – Worst</span></div>
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <input type="text" id="pain-note" placeholder="Describe your pain location...">
+        </div>
+        <button class="btn-primary" onclick="logPain()">Save Pain Entry</button>
+      </div>
+
+      <div class="section-heading">Recent Entries</div>
+      <div class="pain-levels-list" id="pain-history-list">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ REMINDERS ══════════════════════ -->
+  <div class="screen" id="screen-reminders">
+    <div class="page-header">
+      <button class="back-btn" onclick="back()">←</button>
+      <h2>Reminders</h2>
+    </div>
+    <div class="page-body scroll-pad">
+      <div class="section-heading">Active Reminders</div>
+      <div id="reminders-list" style="display:flex;flex-direction:column;gap:10px"></div>
+
+      <div class="divider" style="margin:8px 0"></div>
+      <div class="add-reminder-form">
+        <div class="section-label">+ Add Reminder</div>
+        <div class="form-group">
+          <label>Reminder Name</label>
+          <input type="text" id="rem-name" placeholder="e.g. Ibuprofen 400mg">
+        </div>
+        <div class="form-group">
+          <label>Time</label>
+          <input type="time" id="rem-time" style="color-scheme:dark">
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="rem-type">
+            <option value="💊">💊 Medication</option>
+            <option value="🏥">🏥 Appointment</option>
+            <option value="🏃">🏃 Exercise / Therapy</option>
+            <option value="💧">💧 Hydration</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="addReminder()">Add Reminder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ APPOINTMENTS ══════════════════════ -->
+  <div class="screen" id="screen-appointments">
+    <div class="page-header">
+      <button class="back-btn" onclick="back()">←</button>
+      <h2>Doctor Appointments</h2>
+    </div>
+    <div class="page-body scroll-pad">
+      <div class="section-heading">Your Upcoming Appointment</div>
+      <div id="booked-appt" style="display:none" class="doctor-card" style="background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.3)">
+        <div style="color:#4ade80;font-weight:700;font-size:14px">✅ Appointment Booked</div>
+        <div id="booked-detail" style="color:var(--text-dim);font-size:13px;margin-top:6px"></div>
+      </div>
+
+      <div class="section-heading" style="margin-top:4px">Available Doctors</div>
+
+      <div class="doctor-card" id="doc1">
+        <div class="doctor-top">
+          <div class="doctor-avatar">👩‍⚕️</div>
+          <div>
+            <div class="doctor-name">Dr. Olivia Morris</div>
+            <div class="doctor-spec">Orthopedic Specialist</div>
+            <div class="doctor-avail">Mon – Fri · 11am – 4pm</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Select Date</label>
+          <input type="date" id="appt-date-1" style="color-scheme:dark">
+        </div>
+        <button class="btn-primary" onclick="bookAppt('Dr. Olivia Morris','Orthopedic','appt-date-1')">Book Appointment</button>
+      </div>
+
+      <div class="doctor-card" id="doc2">
+        <div class="doctor-top">
+          <div class="doctor-avatar">👨‍⚕️</div>
+          <div>
+            <div class="doctor-name">Dr. Michael Johnson</div>
+            <div class="doctor-spec">Physical Therapist</div>
+            <div class="doctor-avail">Tue – Sat · 2pm – 12am</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Select Date</label>
+          <input type="date" id="appt-date-2" style="color-scheme:dark">
+        </div>
+        <button class="btn-primary" onclick="bookAppt('Dr. Michael Johnson','Therapist','appt-date-2')">Book Appointment</button>
+      </div>
+
+      <div class="doctor-card">
+        <div class="doctor-top">
+          <div class="doctor-avatar">👩‍⚕️</div>
+          <div>
+            <div class="doctor-name">Dr. Sarah Chen</div>
+            <div class="doctor-spec">Pain Management</div>
+            <div class="doctor-avail">Mon, Wed, Fri · 9am – 1pm</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Select Date</label>
+          <input type="date" id="appt-date-3" style="color-scheme:dark">
+        </div>
+        <button class="btn-primary" onclick="bookAppt('Dr. Sarah Chen','Pain Management','appt-date-3')">Book Appointment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ PAIN REPORTS ══════════════════════ -->
+  <div class="screen" id="screen-reports">
+    <div class="page-header">
+      <button class="back-btn" onclick="back()">←</button>
+      <h2>Pain Reports</h2>
+    </div>
+    <div class="page-body scroll-pad">
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-val" id="avg-pain">—</div>
+          <div class="stat-lbl">Avg Pain</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="max-pain">—</div>
+          <div class="stat-lbl">Peak Pain</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="log-count">0</div>
+          <div class="stat-lbl">Entries</div>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">Pain Level Trend</div>
+        <canvas id="pain-chart" width="310" height="160"></canvas>
+      </div>
+
+      <div class="section-heading">Pain Level History</div>
+      <div class="report-list" id="report-table">
+        <div class="report-row" style="color:var(--text-muted);font-size:13px">No entries yet. Log your pain levels!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ EMERGENCY ══════════════════════ -->
+  <div class="screen" id="screen-emergency">
+    <div class="page-header" style="background:linear-gradient(135deg,#991b1b,#450a0a)">
+      <button class="back-btn" onclick="back()">←</button>
+      <h2>Emergency</h2>
+    </div>
+    <div class="page-body scroll-pad">
+      <button class="sos-btn" onclick="triggerSOS()">
+        <div class="sos-text">SOS</div>
+        <div class="sos-sub">Tap to alert all emergency contacts</div>
+      </button>
+
+      <div class="section-heading">Quick Actions</div>
+      <div class="emergency-actions">
+        <button class="emg-btn emg-red" onclick="callAction('Emergency Services (911)')">
+          <span class="emg-icon">📞</span>
+          <span class="emg-text">Call Emergency (911)</span>
+        </button>
+        <button class="emg-btn emg-green" onclick="callAction('Your Doctor')">
+          <span class="emg-icon">🩺</span>
+          <span class="emg-text">Call Doctor</span>
+        </button>
+        <button class="emg-btn emg-blue" onclick="startChat()">
+          <span class="emg-icon">💬</span>
+          <span class="emg-text">Start Emergency Chat</span>
+        </button>
+      </div>
+
+      <div class="section-heading">Emergency Contacts</div>
+      <div style="display:flex;flex-direction:column;gap:10px" id="contacts-list">
+        <div class="contact-card">
+          <div class="contact-icon">👩</div>
+          <div>
+            <div class="contact-name">Harsha Gudapati</div>
+            <div class="contact-rel">Family Member · (555) 012-3456</div>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="contact-icon">👨</div>
+          <div>
+            <div class="contact-name"></div>
+            <div class="contact-rel">Caregiver · (555) 098-7654</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-heading">Add Emergency Contact</div>
+      <div class="add-reminder-form">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="ec-name" placeholder="Contact name">
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" id="ec-phone" placeholder="(555) 000-0000">
+        </div>
+        <div class="form-group">
+          <label>Relationship</label>
+          <input type="text" id="ec-rel" placeholder="e.g. Family, Doctor">
+        </div>
+        <button class="btn-primary" onclick="addContact()">Add Contact</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ CAREGIVER ══════════════════════ -->
+  <div class="screen" id="screen-caregiver">
+    <div class="page-header" style="background:linear-gradient(135deg,#065f46,#064e3b)">
+      <button class="back-btn" onclick="back()">←</button>
+      <h2>Caregiver Mode</h2>
+    </div>
+    <div class="page-body scroll-pad">
+      <div class="doctor-card" style="background:var(--surface2)">
+        <div class="doctor-top">
+          <div class="doctor-avatar" style="background:linear-gradient(135deg,#065f46,#16a34a)">🏥</div>
+          <div>
+            <div class="doctor-name" id="cg-patient-name">Patient: </div>
+            <div class="doctor-spec">Under your care</div>
+            <div class="doctor-avail">Last updated: Today</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-heading">Today's Overview</div>
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-val" id="cg-pain">8</div>
+          <div class="stat-lbl">Pain Level</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="cg-days">2</div>
+          <div class="stat-lbl">Days at this level</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">🦵</div>
+          <div class="stat-lbl">Active Therapy</div>
+        </div>
+      </div>
+
+      <div class="section-heading">Patient Details</div>
+      <div class="doctor-card" style="display:flex;flex-direction:column;gap:10px">
+        <div class="flex-between"><span style="color:var(--text-muted);font-size:13px">Therapy</span><span style="color:var(--text);font-size:13px;font-weight:600">Leg Rotation</span></div>
+        <div class="divider"></div>
+        <div class="flex-between"><span style="color:var(--text-muted);font-size:13px">Upcoming Appointment</span><span id="cg-appt" style="color:var(--text);font-size:13px;font-weight:600">—</span></div>
+        <div class="divider"></div>
+        <div class="flex-between"><span style="color:var(--text-muted);font-size:13px">Avg Pain (Week)</span><span id="cg-avg" style="color:var(--amber);font-size:13px;font-weight:700;font-family:'Space Mono',monospace">—</span></div>
+      </div>
+
+      <button class="btn-primary" onclick="showToast('Medication reminder set for patient','success')" style="margin-top:4px">Set Medication Reminder</button>
+      <button class="btn-danger" onclick="navigate('emergency')" style="margin-top:8px">🆘 Call Emergency</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ PROFILE ══════════════════════ -->
+  <div class="screen" id="screen-profile">
+    <div class="page-header">
+      <button class="back-btn" onclick="back()">←</button>
+      <h2>Profile</h2>
+    </div>
+    <div class="page-body scroll-pad">
+      <div style="text-align:center;padding:20px 0">
+        <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--orange));margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:40px">👤</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text);margin-top:12px" id="profile-name"></div>
+        <div style="font-size:13px;color:var(--text-muted)" id="profile-email">user@healthtrack.app</div>
+        <div style="display:inline-block;padding:4px 14px;background:rgba(245,158,11,.2);border-radius:20px;color:var(--amber);font-size:12px;font-weight:600;margin-top:8px" id="profile-type">Patient</div>
+      </div>
+      <div class="doctor-card" style="display:flex;flex-direction:column;gap:12px">
+        <div class="section-label" style="font-size:12px;color:var(--amber);font-weight:700;letter-spacing:.5px;text-transform:uppercase">Update Profile</div>
+        <div class="form-group">
+          <label>Display Name</label>
+          <input type="text" id="p-name" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label>Age</label>
+          <input type="number" id="p-age" placeholder="Your age">
+        </div>
+        <div class="form-group">
+          <label>Medical Condition</label>
+          <input type="text" id="p-condition" placeholder="e.g. Chronic back pain">
+        </div>
+        <button class="btn-primary" onclick="updateProfile()">Save Profile</button>
+      </div>
+      <button class="btn-outline" onclick="logout()" style="margin-top:8px;width:100%">Log Out</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────
+let currentScreen = 'login';
+let history = [];
+let user = { name: '', email: 'user@healthtrack.app', type: 'patient' };
+let painLog = [
+  { level: 7, note: 'Lower back', date: 'Oct 17, 2024', time: '9:14 AM' },
+  { level: 6, note: 'Hip area', date: 'Oct 18, 2024', time: '11:30 AM' },
+  { level: 8, note: 'Post exercise', date: 'Oct 19, 2024', time: '3:45 PM' },
+  { level: 1, note: 'Much better', date: 'Oct 20, 2024', time: '8:00 AM' },
+];
+let reminders = [
+  { name: 'Ibuprofen 400mg', time: '08:00', type: '💊', id: 1 },
+  { name: 'Dr. Morris Appointment', time: '11:00', type: '🏥', id: 2 },
+  { name: 'Leg Rotation Therapy', time: '15:00', type: '🏃', id: 3 },
+];
+let selectedUserType = 'patient';
+let bookedAppt = null;
+let reminderId = 10;
+let contactId = 20;
+
+const painData = {
+  0: { emoji: '😊', desc: 'No pain', color: '#22c55e' },
+  1: { emoji: '🙂', desc: 'Minimal pain', color: '#4ade80' },
+  2: { emoji: '😌', desc: 'Mild pain', color: '#86efac' },
+  3: { emoji: '😐', desc: 'Mild pain', color: '#bef264' },
+  4: { emoji: '😕', desc: 'Moderate pain', color: '#fde047' },
+  5: { emoji: '😟', desc: 'Moderate pain', color: '#f59e0b' },
+  6: { emoji: '😣', desc: 'Severe pain', color: '#fb923c' },
+  7: { emoji: '😖', desc: 'Severe pain', color: '#f97316' },
+  8: { emoji: '😫', desc: 'Very severe', color: '#ef4444' },
+  9: { emoji: '😤', desc: 'Worst pain', color: '#dc2626' },
+  10: { emoji: '😵', desc: 'Unbearable', color: '#991b1b' },
+};
+
+// ─── Navigation ───────────────────────────────────────
+function navigate(screen) {
+  history.push(currentScreen);
+  showScreen(screen);
+  if (screen === 'reports') renderReports();
+  if (screen === 'pain-logger') renderPainHistory();
+  if (screen === 'reminders') renderReminders();
+  if (screen === 'caregiver') updateCaregiverView();
+}
+
+function back() {
+  const prev = history.pop();
+  if (prev) showScreen(prev);
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  currentScreen = name;
+}
+
+// ─── Login / Register ─────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+  });
+  document.getElementById('login-form').style.display = tab === 'login' ? 'flex' : 'none';
+  document.getElementById('register-form').style.display = tab === 'register' ? 'flex' : 'none';
+}
+
+function selectUserType(type) {
+  selectedUserType = type;
+  ['patient','caregiver'].forEach(t => {
+    document.getElementById('opt-' + t).classList.toggle('selected', t === type);
+    const dot = document.getElementById('dot-' + t);
+    dot.classList.toggle('filled', t === type);
+  });
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-password').value;
+  if (!email || !pass) { showToast('Please fill in all fields', 'error'); return; }
+  user.email = email;
+  document.getElementById('dash-username').textContent = user.name;
+  updateDashPain();
+  history = [];
+  showScreen('dashboard');
+  showToast('Welcome back! 👋');
+}
+
+function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  if (!name || !email || !pass) { showToast('Please fill in all fields', 'error'); return; }
+  user = { name, email, type: selectedUserType };
+  document.getElementById('dash-username').textContent = name;
+  document.getElementById('profile-name').textContent = name;
+  document.getElementById('profile-email').textContent = email;
+  document.getElementById('profile-type').textContent = selectedUserType === 'caregiver' ? 'Caregiver' : 'Patient';
+  updateDashPain();
+  history = [];
+  showScreen('dashboard');
+  showToast('Account created! Welcome 🎉');
+}
+
+function logout() {
+  history = [];
+  showScreen('login');
+  showToast('Logged out successfully');
+}
+
+// ─── Pain Logger ──────────────────────────────────────
+function updateSlider(val) {
+  const d = painData[+val];
+  document.getElementById('logger-num').textContent = val;
+  document.getElementById('logger-num').style.color = d.color;
+  document.getElementById('logger-emoji').textContent = d.emoji;
+  document.getElementById('logger-desc').textContent = d.desc;
+
+  // Color the range track
+  const pct = (val / 10) * 100;
+  const slider = document.getElementById('pain-slider');
+  slider.style.background = `linear-gradient(to right, ${d.color} 0%, ${d.color} ${pct}%, rgba(245,158,11,.2) ${pct}%, rgba(245,158,11,.2) 100%)`;
+}
+
+function logPain() {
+  const level = +document.getElementById('pain-slider').value;
+  const note = document.getElementById('pain-note').value.trim() || 'No note';
+  const now = new Date();
+  const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  painLog.unshift({ level, note, date, time });
+  document.getElementById('pain-note').value = '';
+  updateDashPain();
+  renderPainHistory();
+  showToast(`Pain level ${level} logged ✓`);
+}
+
+function renderPainHistory() {
+  const container = document.getElementById('pain-history-list');
+  if (!painLog.length) { container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:14px">No entries yet.</div>'; return; }
+  container.innerHTML = painLog.slice(0, 8).map(e => {
+    const cls = e.level <= 2 ? 'p0-2' : e.level <= 4 ? 'p3-4' : e.level <= 6 ? 'p5-6' : e.level <= 8 ? 'p7-8' : 'p9-10';
+    const d = painData[e.level];
+    return `<div class="pain-row ${cls}">
+      <div class="left">
+        <span style="font-size:22px">${d.emoji}</span>
+        <div>
+          <div class="date">${e.date}</div>
+          <div class="time">${e.time} · ${e.note}</div>
+        </div>
+      </div>
+      <div class="pain-badge ${cls}" style="background:rgba(0,0,0,.3)">${e.level}/10</div>
+    </div>`;
+  }).join('');
+}
+
+function updateDashPain() {
+  if (!painLog.length) return;
+  const latest = painLog[0];
+  const d = painData[latest.level];
+  document.getElementById('dash-pain-val').textContent = latest.level;
+  document.getElementById('dash-pain-emoji').textContent = d.emoji;
+  document.getElementById('dash-pain-desc').textContent = d.desc;
+}
+
+// Init slider
+updateSlider(5);
+
+// ─── Reminders ────────────────────────────────────────
+function renderReminders() {
+  const container = document.getElementById('reminders-list');
+  if (!reminders.length) { container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:14px">No reminders set.</div>'; return; }
+  container.innerHTML = reminders.map(r => `
+    <div class="reminder-card" id="rem-${r.id}">
+      <div class="reminder-icon-wrap">${r.type}</div>
+      <div class="reminder-info">
+        <div class="reminder-name">${r.name}</div>
+        <div class="reminder-time">⏰ ${formatTime(r.time)}</div>
+        <div class="reminder-actions">
+          <button class="pill-btn pill-taken" onclick="markTaken(${r.id})">✓ Taken</button>
+          <button class="pill-btn pill-snooze" onclick="showToast('Snoozed for 30 min')">Snooze</button>
+          <button class="pill-btn pill-dismiss" onclick="dismissReminder(${r.id})">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function formatTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hour = +h;
+  return `${hour > 12 ? hour - 12 : hour || 12}:${m} ${hour >= 12 ? 'PM' : 'AM'}`;
+}
+
+function addReminder() {
+  const name = document.getElementById('rem-name').value.trim();
+  const time = document.getElementById('rem-time').value;
+  const type = document.getElementById('rem-type').value;
+  if (!name || !time) { showToast('Fill in name & time', 'error'); return; }
+  reminders.unshift({ name, time, type, id: ++reminderId });
+  document.getElementById('rem-name').value = '';
+  document.getElementById('rem-time').value = '';
+  renderReminders();
+  showToast('Reminder added ✓');
+}
+
+function markTaken(id) {
+  reminders = reminders.filter(r => r.id !== id);
+  renderReminders();
+  showToast('Marked as taken ✓');
+}
+
+function dismissReminder(id) {
+  reminders = reminders.filter(r => r.id !== id);
+  renderReminders();
+}
+
+// ─── Appointments ─────────────────────────────────────
+function bookAppt(doctor, spec, dateId) {
+  const date = document.getElementById(dateId).value;
+  if (!date) { showToast('Please select a date', 'error'); return; }
+  const formatted = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  bookedAppt = { doctor, spec, date: formatted };
+  const el = document.getElementById('booked-appt');
+  el.style.display = 'block';
+  document.getElementById('booked-detail').textContent = `${doctor} (${spec}) · ${formatted}`;
+  document.getElementById('cg-appt').textContent = formatted;
+  showToast(`Appointment booked with ${doctor} ✓`);
+}
+
+// ─── Reports ──────────────────────────────────────────
+function renderReports() {
+  if (!painLog.length) return;
+  const levels = painLog.map(e => e.level);
+  const avg = (levels.reduce((a, b) => a + b, 0) / levels.length).toFixed(1);
+  const max = Math.max(...levels);
+  document.getElementById('avg-pain').textContent = avg;
+  document.getElementById('max-pain').textContent = max;
+  document.getElementById('log-count').textContent = painLog.length;
+  document.getElementById('cg-avg').textContent = avg;
+
+  // Render table
+  document.getElementById('report-table').innerHTML = painLog.slice(0, 10).map(e => {
+    const cls = e.level <= 2 ? 'p0-2' : e.level <= 4 ? 'p3-4' : e.level <= 6 ? 'p5-6' : e.level <= 8 ? 'p7-8' : 'p9-10';
+    const d = painData[e.level];
+    return `<div class="report-row">
+      <div><div class="report-date">${e.date}</div><div style="font-size:11px;color:var(--text-muted)">${e.note}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">${d.emoji}</span>
+        <span class="${cls}" style="font-family:'Space Mono';font-weight:700;font-size:16px">${e.level}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Draw chart
+  const canvas = document.getElementById('pain-chart');
+  const ctx = canvas.getContext('2d');
+  const pts = painLog.slice(0, 7).reverse();
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(245,158,11,.1)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = 16 + ((H - 32) / 5) * i;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  if (pts.length < 2) return;
+  const stepX = (W - 20) / (pts.length - 1);
+  const toY = v => 16 + ((H - 32) / 10) * (10 - v);
+  const toX = i => 10 + i * stepX;
+
+  // Area fill
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(245,158,11,.35)');
+  grad.addColorStop(1, 'rgba(245,158,11,.02)');
+  ctx.beginPath();
+  ctx.moveTo(toX(0), H);
+  pts.forEach((p, i) => ctx.lineTo(toX(i), toY(p.level)));
+  ctx.lineTo(toX(pts.length - 1), H);
+  ctx.fillStyle = grad; ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(toX(i), toY(p.level)) : ctx.lineTo(toX(i), toY(p.level)));
+  ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round'; ctx.stroke();
+
+  // Dots
+  pts.forEach((p, i) => {
+    const d = painData[p.level];
+    ctx.beginPath();
+    ctx.arc(toX(i), toY(p.level), 5, 0, Math.PI * 2);
+    ctx.fillStyle = d.color; ctx.fill();
+    ctx.strokeStyle = '#1a1208'; ctx.lineWidth = 2; ctx.stroke();
+  });
+}
+
+// ─── Emergency ───────────────────────────────────────
+function triggerSOS() {
+  showToast('🆘 SOS alert sent to all contacts!', 'error');
+}
+function callAction(who) {
+  showToast(`📞 Calling ${who}...`);
+}
+function startChat() {
+  showToast('💬 Emergency chat started');
+}
+function addContact() {
+  const name = document.getElementById('ec-name').value.trim();
+  const phone = document.getElementById('ec-phone').value.trim();
+  const rel = document.getElementById('ec-rel').value.trim();
+  if (!name || !phone) { showToast('Fill in name & phone', 'error'); return; }
+  const list = document.getElementById('contacts-list');
+  const div = document.createElement('div');
+  div.className = 'contact-card';
+  div.innerHTML = `<div class="contact-icon">👤</div><div><div class="contact-name">${name}</div><div class="contact-rel">${rel || 'Contact'} · ${phone}</div></div>`;
+  list.appendChild(div);
+  document.getElementById('ec-name').value = '';
+  document.getElementById('ec-phone').value = '';
+  document.getElementById('ec-rel').value = '';
+  showToast('Contact added ✓');
+}
+
+// ─── Caregiver ────────────────────────────────────────
+function updateCaregiverView() {
+  if (painLog.length) {
+    document.getElementById('cg-pain').textContent = painLog[0].level;
+    const levels = painLog.map(e => e.level);
+    document.getElementById('cg-avg').textContent = (levels.reduce((a, b) => a + b, 0) / levels.length).toFixed(1);
+  }
+  if (bookedAppt) document.getElementById('cg-appt').textContent = bookedAppt.date;
+}
+
+// ─── Profile ──────────────────────────────────────────
+function updateProfile() {
+  const name = document.getElementById('p-name').value.trim();
+  if (name) {
+    user.name = name;
+    document.getElementById('profile-name').textContent = name;
+    document.getElementById('dash-username').textContent = name;
+  }
+  showToast('Profile updated ✓');
+}
+
+// ─── Toast ────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type === 'error' ? ' error' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
