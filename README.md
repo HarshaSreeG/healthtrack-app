@@ -3,7 +3,7 @@
 A mobile-first web app for tracking pain levels, managing medication reminders, booking doctor appointments, and accessing emergency contacts — all in one place.
 
 ## 🌐 Live Demo
-Visit the live link at: (https://HarshaSreeG.github.io/healthtrack-app/)
+Visit the live link at: https://HarshaSreeG.github.io/healthtrack-app/
 
 ---
 
